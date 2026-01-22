@@ -32,7 +32,7 @@ TASK_COUNT = int(os.environ.get("CLOUD_RUN_TASK_COUNT", 1))
 # Configuration from environment
 DATABASE_URL = os.environ.get("DATABASE_URL")
 EMBEDDING_API_URL = os.environ.get("EMBEDDING_API_URL", "https://embedding.views.fr")
-EMBEDDING_DIMENSION = int(os.environ.get("EMBEDDING_DIMENSION", 1024))
+EMBEDDING_DIMENSION = int(os.environ.get("EMBEDDING_DIMENSION", 512))
 BATCH_SIZE = int(os.environ.get("BATCH_SIZE", 10))
 
 

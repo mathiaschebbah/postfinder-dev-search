@@ -59,7 +59,7 @@ class PostEmbedding(SQLModel, table=True):
             primary_key=True,
         )
     )
-    embedding: list[float] = Field(sa_column=Column(Vector(1024), nullable=False))
+    embedding: list[float] = Field(sa_column=Column(Vector(512), nullable=False))
     created_at: datetime | None = Field(
         default=None, sa_column=Column(DateTime, server_default=func.now())
     )
