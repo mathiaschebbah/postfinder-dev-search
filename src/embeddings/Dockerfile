@@ -9,6 +9,8 @@ RUN pip install --no-cache-dir --target=/app/deps -r requirements.txt
 # Runtime stage
 FROM python:3.12-slim
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Copy only installed packages

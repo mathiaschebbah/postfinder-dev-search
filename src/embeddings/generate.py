@@ -232,8 +232,7 @@ async def main():
         log(f"Will process {len(posts)} posts in {num_batches} batch(es)")
         log_separator()
 
-        # Process batches
-        all_embeddings = []
+        # Process batches (commit after each batch for incremental progress)
         total_success = 0
         total_errors = 0
 
@@ -244,22 +243,19 @@ async def main():
 
             try:
                 embeddings = process_batch(client, batch_posts, batch_num, num_batches)
-                all_embeddings.extend(embeddings)
+
+                # Save and commit this batch immediately
+                for ig_media_id, embedding in embeddings:
+                    save_embedding(session, ig_media_id, embedding)
+                await session.commit()
+
                 total_success += len(embeddings)
+                log(f"BATCH {batch_num}/{num_batches} - Committed {len(embeddings)} embeddings (total: {total_success}/{len(posts)})")
+
             except Exception as e:
                 log(f"Batch {batch_num} FAILED: {e}", level="ERROR")
+                await session.rollback()
                 total_errors += len(batch_posts)
-
-        # Single commit for all embeddings
-        if all_embeddings:
-            log_separator()
-            log(f"Inserting {len(all_embeddings)} embeddings into database...")
-            db_start = time.time()
-            for ig_media_id, embedding in all_embeddings:
-                save_embedding(session, ig_media_id, embedding)
-            await session.commit()
-            db_time = time.time() - db_start
-            log(f"Database commit completed in {db_time:.3f}s")
 
     # Cleanup
     await engine.dispose()
