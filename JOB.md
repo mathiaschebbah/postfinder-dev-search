@@ -28,12 +28,11 @@ Seuls `src/client.py` et `src/embeddings/` sont déployés. Le reste du projet (
 ```bash
 cd postfinder-dev-search
 
-# Build
-docker build -f src/embeddings/Dockerfile -t dev-postfinder-embeddings .
-
-# Tag et push
-docker tag dev-postfinder-embeddings europe-west1-docker.pkg.dev/postfinder-dev-v2/postfinder-dev-embeddings/embeddings
-docker push europe-west1-docker.pkg.dev/postfinder-dev-v2/postfinder-dev-embeddings/embeddings
+# Build pour linux/amd64 (Cloud Run) et push
+docker buildx build --platform linux/amd64 \
+  -f src/embeddings/Dockerfile \
+  -t europe-west1-docker.pkg.dev/postfinder-dev-v2/postfinder-dev-embeddings/embeddings \
+  --push .
 ```
 
 ## Variables d'environnement
@@ -42,7 +41,7 @@ docker push europe-west1-docker.pkg.dev/postfinder-dev-v2/postfinder-dev-embeddi
 |----------|-------------|--------|
 | `DATABASE_URL` | URL PostgreSQL (secret) | **requis** |
 | `EMBEDDING_API_URL` | URL de l'API d'embedding | `https://embedding.views.fr` |
-| `EMBEDDING_DIMENSION` | Dimension des vecteurs | `1024` |
+| `EMBEDDING_DIMENSION` | Dimension des vecteurs | `512` |
 | `BATCH_SIZE` | Posts par appel API | `10` |
 
 Variables injectées automatiquement par Cloud Run :
