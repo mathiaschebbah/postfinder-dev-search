@@ -1,0 +1,31 @@
+[project]
+name = "postfinder-dev-search"
+version = "0.1.0"
+description = "Postfinder multimodal embedding service"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    # Modal deployment
+    "modal>=1.0.0",
+    "pydantic>=2.0.0",
+    # Local demo app
+    "flask>=3.0.0",
+    "requests>=2.31.0",
+    "numpy>=1.26.0",
+    # Local server (Mac Studio)
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "torch>=2.0.0",
+    "torchvision>=0.15.0",
+    "transformers>=4.57.0",
+    "qwen-vl-utils>=0.0.14",
+    "pillow>=10.0.0",
+    "accelerate>=0.26.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src"]
