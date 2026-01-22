@@ -40,10 +40,11 @@ class PostfinderClient:
 
     def _url(self, endpoint: str) -> str:
         if self.base_url:
-            # Local server: endpoints are /health, /embed_query, /embed_post
+            # Local server: endpoints are /health, /embed_query, /embed_post, /embed_posts
             endpoint_map = {
                 "embed-query": "/embed_query",
                 "embed-post": "/embed_post",
+                "embed-posts": "/embed_posts",
                 "health": "/health",
             }
             return f"{self.base_url.rstrip('/')}{endpoint_map[endpoint]}"
@@ -75,20 +76,30 @@ class PostfinderClient:
         self,
         caption: Optional[str] = None,
         image_url: Optional[str] = None,
+        image_urls: Optional[List[str]] = None,
         dimension: Optional[int] = None,
     ) -> EmbeddingResult:
-        """Embed an Instagram post (caption and/or image).
+        """Embed an Instagram post (caption and/or images).
 
         Args:
             caption: The post caption text.
-            image_url: URL of the post image.
+            image_url: URL of a single image (convenience param).
+            image_urls: List of image URLs.
             dimension: Optional MRL dimension (64, 128, 256, 512, 1024, 2048).
         """
-        payload = {}
-        if caption:
-            payload["caption"] = caption
+        # Build image_urls list
+        urls = []
         if image_url:
-            payload["image_url"] = image_url
+            urls.append(image_url)
+        if image_urls:
+            urls.extend(image_urls)
+
+        payload = {
+            "post": {
+                "caption": caption,
+                "image_urls": urls,
+            }
+        }
         if dimension:
             payload["dimension"] = dimension
 
@@ -100,6 +111,33 @@ class PostfinderClient:
         response.raise_for_status()
         data = response.json()
         return EmbeddingResult(embedding=data["embedding"], dimension=data["dimension"])
+
+    def embed_posts(
+        self,
+        posts: List[dict],
+        dimension: Optional[int] = None,
+    ) -> List[EmbeddingResult]:
+        """Embed multiple posts in batch.
+
+        Args:
+            posts: List of post dicts with 'caption' and 'image_urls' keys.
+            dimension: Optional MRL dimension (64, 128, 256, 512, 1024, 2048).
+        """
+        payload = {"posts": posts}
+        if dimension:
+            payload["dimension"] = dimension
+
+        response = requests.post(
+            self._url("embed-posts"),
+            json=payload,
+            timeout=600,
+        )
+        response.raise_for_status()
+        data = response.json()
+        return [
+            EmbeddingResult(embedding=emb, dimension=data["dimension"])
+            for emb in data["embeddings"]
+        ]
 
     def health(self) -> dict:
         """Check API health."""

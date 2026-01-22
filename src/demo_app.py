@@ -1,12 +1,10 @@
-import os
 from flask import Flask, render_template_string, request, jsonify
 from client import PostfinderClient
 
 app = Flask(__name__)
 
-# Use local server if BASE_URL env var is set, otherwise Modal
-base_url = os.environ.get("BASE_URL")
-client = PostfinderClient(base_url=base_url)
+# Use local FastAPI server
+client = PostfinderClient(base_url="http://localhost:8000")
 
 HTML_TEMPLATE = """
 <!DOCTYPE html>
@@ -284,10 +282,34 @@ def embed_query():
 def embed_post():
     try:
         data = request.json
-        if not data.get("caption") and not data.get("image_url"):
-            return jsonify({"error": "At least caption or image_url required"}), 400
-        result = client.embed_post(caption=data.get("caption"), image_url=data.get("image_url"))
+        if not data.get("caption") and not data.get("image_url") and not data.get("image_urls"):
+            return jsonify({"error": "At least caption, image_url, or image_urls required"}), 400
+        result = client.embed_post(
+            caption=data.get("caption"),
+            image_url=data.get("image_url"),
+            image_urls=data.get("image_urls"),
+            dimension=data.get("dimension"),
+        )
         return jsonify({"embedding": result.embedding, "dimension": result.dimension})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/embed/posts", methods=["POST"])
+def embed_posts():
+    try:
+        data = request.json
+        if not data.get("posts"):
+            return jsonify({"error": "posts list required"}), 400
+        results = client.embed_posts(
+            posts=data["posts"],
+            dimension=data.get("dimension"),
+        )
+        return jsonify({
+            "embeddings": [r.embedding for r in results],
+            "dimension": results[0].dimension if results else 0,
+            "count": len(results),
+        })
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
