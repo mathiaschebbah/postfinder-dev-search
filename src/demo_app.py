@@ -1,5 +1,5 @@
 from flask import Flask, render_template_string, request, jsonify
-from client import PostfinderClient
+from src.client import PostfinderClient
 
 app = Flask(__name__)
 
@@ -80,8 +80,12 @@ HTML_TEMPLATE = """
         .similarity-score.low { color: #dc3545; }
         .loading { opacity: 0.6; }
         .error { color: #dc3545; }
+        .success { color: #28a745; }
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 600px) { .grid { grid-template-columns: 1fr; } }
+        .batch-input { font-family: monospace; min-height: 150px; }
+        .batch-stats { display: flex; gap: 20px; margin-bottom: 10px; }
+        .batch-stats span { padding: 5px 10px; background: #e9ecef; border-radius: 4px; }
     </style>
 </head>
 <body>
@@ -128,6 +132,26 @@ HTML_TEMPLATE = """
         <button id="compare-btn" disabled>Calculate Similarity</button>
         <div id="similarity-result" class="result">
             <div class="similarity-score"></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Batch Embed Posts</h2>
+        <p>Embed multiple posts at once. Enter JSON array of posts.</p>
+        <form id="batch-form">
+            <label for="batch-posts">Posts (JSON array)</label>
+            <textarea id="batch-posts" name="posts" class="batch-input" placeholder='[
+  {"caption": "First post caption", "image_urls": []},
+  {"caption": "Second post", "image_urls": ["https://example.com/img.jpg"]},
+  {"caption": "Third post", "image_urls": []}
+]'></textarea>
+            <label for="batch-dimension">Dimension (optional)</label>
+            <input type="number" id="batch-dimension" name="dimension" placeholder="256" min="64" max="2048" step="64">
+            <button type="submit">Generate Batch Embeddings</button>
+        </form>
+        <div id="batch-result" class="result">
+            <div class="batch-stats"></div>
+            <pre></pre>
         </div>
     </div>
 
@@ -245,6 +269,46 @@ HTML_TEMPLATE = """
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Calculate Similarity';
+            }
+        });
+
+        document.getElementById('batch-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = e.target.querySelector('button');
+            const resultDiv = document.getElementById('batch-result');
+            btn.disabled = true;
+            btn.textContent = 'Generating...';
+            resultDiv.classList.remove('show');
+
+            try {
+                const postsText = document.getElementById('batch-posts').value;
+                const posts = JSON.parse(postsText);
+                const dimension = document.getElementById('batch-dimension').value;
+
+                const payload = { posts };
+                if (dimension) payload.dimension = parseInt(dimension);
+
+                const res = await fetch('/api/embed/posts', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.error) throw new Error(data.error);
+
+                resultDiv.querySelector('.batch-stats').innerHTML =
+                    `<span>Count: ${data.count}</span><span>Dimension: ${data.dimension}</span>`;
+                resultDiv.querySelector('pre').innerHTML =
+                    `<span class="success">✓ Generated ${data.count} embeddings</span>\\n\\n` +
+                    `First embedding (truncated):\\n${JSON.stringify(data.embeddings[0]?.slice(0, 10), null, 2)}...`;
+                resultDiv.classList.add('show');
+            } catch (err) {
+                resultDiv.querySelector('.batch-stats').innerHTML = '';
+                resultDiv.querySelector('pre').innerHTML = `<span class="error">Error: ${err.message}</span>`;
+                resultDiv.classList.add('show');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Generate Batch Embeddings';
             }
         });
 

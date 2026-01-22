@@ -5,10 +5,8 @@ description = "Postfinder multimodal embedding service"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    # Modal deployment
-    "modal>=1.0.0",
     "pydantic>=2.0.0",
-    # Local demo app
+    # Demo app
     "flask>=3.0.0",
     "requests>=2.31.0",
     "numpy>=1.26.0",
