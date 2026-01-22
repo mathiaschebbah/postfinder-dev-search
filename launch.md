@@ -4,56 +4,114 @@
 
 - Mac Studio avec Apple Silicon
 - Python 3.12+
-- `uv` installé
-- `tmux` installé (`brew install tmux`)
+- uv installé
+- tmux installé (brew install tmux)
+- cloudflared installé (brew install cloudflared)
 
-## Démarrer le serveur
+## Connexion SSH
 
-```bash
-ssh mathias@<ip-macstudio>
-cd ~/Projects/postfinder-dev-search
+```
+ssh mathias@macstudio
+```
+
+ou
+
+```
+ssh alexmouchet@192.168.21.54
+```
+
+## Lancer le serveur (session tmux "postfinder")
+
+```
 tmux new -s postfinder
+```
+
+```
+cd ~/Projects/postfinder-dev-search
 uv run uvicorn server_local:app --host 0.0.0.0 --port 8933
 ```
 
-Puis **Ctrl+B** puis **D** pour détacher et quitter SSH.
+Détacher : Ctrl+B puis D
 
-## Commandes utiles
+## Lancer le tunnel Cloudflare (session tmux "tunnel")
 
-| Action | Commande |
-|--------|----------|
-| Voir les sessions | `tmux ls` |
-| Se rattacher | `tmux attach -t postfinder` |
-| Détacher | `Ctrl+B` puis `D` |
-| Arrêter le serveur | `tmux attach -t postfinder` puis `Ctrl+C` |
-| Tuer la session | `tmux kill-session -t postfinder` |
+```
+tmux new -s tunnel
+```
+
+```
+cloudflared tunnel --url http://localhost:8933
+```
+
+Détacher : Ctrl+B puis D
+
+L'URL publique s'affiche dans le terminal (ex: https://xxx.trycloudflare.com)
+
+## Commandes tmux
+
+Lister les sessions :
+```
+tmux ls
+```
+
+Se rattacher à une session :
+```
+tmux attach -t postfinder
+tmux attach -t tunnel
+```
+
+Détacher (depuis une session) :
+```
+Ctrl+B puis D
+```
+
+Changer de session (depuis une session) :
+```
+Ctrl+B puis s
+```
+
+Tuer une session :
+```
+tmux kill-session -t postfinder
+tmux kill-session -t tunnel
+```
 
 ## Vérifier le status
 
-```bash
-curl http://<ip-macstudio>:8933/health
+Local :
+```
+curl http://localhost:8933/health
+```
+
+Via tunnel :
+```
+curl https://xxx.trycloudflare.com/health
 ```
 
 Réponse attendue :
-```json
+```
 {"status":"ok","model":"Qwen/Qwen3-VL-Embedding-2B"}
 ```
 
-## Logs
+## Arrêter le serveur
 
-Les logs s'affichent dans la session tmux. Pour les voir :
-```bash
+```
 tmux attach -t postfinder
+Ctrl+C
+exit
 ```
 
-## URL de l'API
+## Arrêter le tunnel
 
 ```
-http://<ip-macstudio>:8933
+tmux attach -t tunnel
+Ctrl+C
+exit
 ```
 
-Endpoints :
-- `GET /health`
-- `POST /embed_query`
-- `POST /embed_post`
-- `POST /embed_posts`
+## Endpoints API
+
+- GET /health
+- POST /embed_query
+- POST /embed_post
+- POST /embed_posts
