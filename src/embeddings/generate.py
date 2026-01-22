@@ -132,10 +132,11 @@ async def fetch_posts_for_task(
     result = await session.execute(stmt)
     all_rows = result.fetchall()
 
-    # Partition by modulo: this task handles rows where index % task_count == task_index
+    # Partition by modulo on ig_media_id (stable, unlike list index)
+    # This ensures each task always gets the same posts regardless of when it starts
     posts = []
-    for i, row in enumerate(all_rows):
-        if i % task_count == task_index:
+    for row in all_rows:
+        if int(row.ig_media_id) % task_count == task_index:
             posts.append({
                 "ig_media_id": row.ig_media_id,
                 "media_type": row.media_type,

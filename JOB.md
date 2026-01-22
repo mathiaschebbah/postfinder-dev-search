@@ -50,21 +50,14 @@ Variables injectées automatiquement par Cloud Run :
 
 ## Parallélisme
 
-Le job utilise le partitionnement par modulo pour distribuer les posts entre les tâches.
+Le job utilise le partitionnement par modulo sur `ig_media_id` pour distribuer les posts entre les tâches.
 
-Exemple avec **4 tâches** et 100 posts :
-
-| Tâche | Index | Posts traités |
-|-------|-------|---------------|
-| 0 | 0 | 0, 4, 8, 12... (25 posts) |
-| 1 | 1 | 1, 5, 9, 13... (25 posts) |
-| 2 | 2 | 2, 6, 10, 14... (25 posts) |
-| 3 | 3 | 3, 7, 11, 15... (25 posts) |
+**Important** : On partitionne par `ig_media_id` (stable) et non par index de liste (instable), car les tâches démarrent à des moments différents et voient des listes différentes.
 
 Code :
 ```python
-for i, row in enumerate(all_rows):
-    if i % task_count == task_index:
+for row in all_rows:
+    if int(row.ig_media_id) % task_count == task_index:
         posts.append(...)
 ```
 
